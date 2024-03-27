@@ -1,4 +1,6 @@
+import { cloudEvent } from "@google-cloud/functions-framework";
 import { Sequelize } from "sequelize";
+import mailgun from "mailgun-js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -61,3 +63,60 @@ const User = sequelize.define(
     tableName: "users",
   }
 );
+
+const mailGunApiKey = process.env.MAILGUN_API_KEY;
+const domainName = "vispaduchuri.me";
+
+const mailClient = mailgun({ apiKey: mailGunApiKey, domain: domainName });
+
+const updateUserTimeStamp = async (userObject) => {
+  const { username = "" } = userObject;
+
+  const generateCurrentTimeStamp = new Date();
+
+  try {
+    const userDetails = await User.findOne({
+      where: { username },
+    });
+
+    userDetails.verificationMailTimeStamp = generateCurrentTimeStamp;
+    await userDetails.save();
+    console.log("Time stamp updated successfully!");
+  } catch (error) {
+    console.log("Error in updating time stamp: ", error);
+  }
+};
+
+// Reference taken from https://www.geeksforgeeks.org/how-to-send-email-using-mailgun-api-in-node-js/
+export const sendEmailForVerification = async (userObject) => {
+  const { username = "", first_name = "", last_name = "" } = userObject;
+
+  const fromEmail = "Vishnu Paduchuri <postmater@vispaduchuri.me>";
+  const verificationLink = `https://vispaduchuri.me/v1/user/verification?email=${username}`;
+
+  const emailData = {
+    from: fromEmail,
+    to: username,
+    subject: "Verification link for your account!",
+    text: `Hey ${first_name} ${last_name}, Your verification links expires in 2 minutes: \n${verificationLink}\n`,
+  };
+
+  mailClient.messages().send(emailData, async (error, body) => {
+    if (error) {
+      console.log("Error in sending verification email", error);
+    } else {
+      console.log("Email sent successfully");
+      await updateUserTimeStamp(userObject);
+    }
+  });
+};
+
+cloudEvent("sendEmailVerification", async (payload) => {
+  const payloadMessage = payload.data.message.data;
+
+  const userObject = JSON.parse(
+    Buffer.from(payloadMessage, "base64").toString()
+  );
+
+  await sendEmailForVerification(userObject);
+});
