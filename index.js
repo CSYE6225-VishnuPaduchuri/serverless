@@ -1,5 +1,5 @@
 import { cloudEvent } from "@google-cloud/functions-framework";
-import { Sequelize } from "sequelize";
+import { Sequelize, DataTypes } from "sequelize";
 import mailgun from "mailgun-js";
 import dotenv from "dotenv";
 
@@ -89,10 +89,15 @@ const updateUserTimeStamp = async (userObject) => {
 
 // Reference taken from https://www.geeksforgeeks.org/how-to-send-email-using-mailgun-api-in-node-js/
 export const sendEmailForVerification = async (userObject) => {
-  const { username = "", first_name = "", last_name = "" } = userObject;
+  const {
+    username = "",
+    first_name = "",
+    last_name = "",
+    id = "",
+  } = userObject;
 
   const fromEmail = "Vishnu Paduchuri <postmater@vispaduchuri.me>";
-  const verificationLink = `https://vispaduchuri.me/v1/user/verification?email=${username}`;
+  const verificationLink = `http://vispaduchuri.me:8080/v1/user/verifyUser/${id}`;
 
   const emailData = {
     from: fromEmail,
