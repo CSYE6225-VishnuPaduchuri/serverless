@@ -97,7 +97,7 @@ export const sendEmailForVerification = async (userObject) => {
   } = userObject;
 
   const fromEmail = "Vishnu Paduchuri <postmater@vispaduchuri.me>";
-  const verificationLink = `http://vispaduchuri.me:8080/v1/user/verifyUser/${id}`;
+  const verificationLink = `https://vispaduchuri.me:8080/v1/user/verifyUser/${id}`;
 
   const emailData = {
     from: fromEmail,
